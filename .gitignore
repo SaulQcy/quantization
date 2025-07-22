@@ -206,3 +206,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+./resnet18_imagenette_model/resnet18.rknn
+./resnet18_imagenette_model/resnet18.onnx
