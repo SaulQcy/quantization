@@ -6,8 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
-resnet18_imagenette_model/resnet18.onnx
-resnet18_imagenette_model/resnet18.rknn
+*.onnx
+*.rknn
+snapshot
 
 # Distribution / packaging
 .Python
