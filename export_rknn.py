@@ -43,14 +43,14 @@ ret = rknn_runtime.init_runtime(target=None)
 if ret != 0:
     raise Exception(f"rknn init fail: {ret}")
 
-img = PIL.Image.open("dataset/imagenette2-320/train/n02102040/ILSVRC2012_val_00000665.JPEG").resize((224, 224))
-x_np = np.array(img)
-x_np = np.expand_dims(x_np, axis=0)
-# x_tc = torch.from_numpy(x_np).permute(2, 0 ,1).unsqueeze(0)
+# img = PIL.Image.open("dataset/imagenette2-320/train/n02102040/ILSVRC2012_val_00000665.JPEG").resize((224, 224))
+# x_np = np.array(img)
+# x_np = np.expand_dims(x_np, axis=0)
+# # x_tc = torch.from_numpy(x_np).permute(2, 0 ,1).unsqueeze(0)
 
-outputs = rknn_runtime.inference(inputs=[x_np])
-print(outputs[0].shape)
-y = np.argmax(outputs[0])
-print(np.argmax(y))
+# outputs = rknn_runtime.inference(inputs=[x_np])
+# print(outputs[0].shape)
+# y = np.argmax(outputs[0])
+# print(np.argmax(y))
 
 rknn_runtime.release()
