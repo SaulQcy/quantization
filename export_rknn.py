@@ -3,30 +3,37 @@ import PIL
 import PIL.Image
 import numpy as np
 from rknn.api import RKNN
+import argparse
 
-# load original torch model, not torchscript.
-model = torch.load("./model/resnet18.pth")
-dummy_input = torch.randn(1, 3, 224, 224)
-# export to ONNX
-torch.onnx.export(model, dummy_input, "./model/resnet18.onnx", opset_version=11)
+def get_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--onnx_path", type=str, default="/home/saul/proj/PFLD_test_onnx/output/0729_466_dict_sim.onnx")
+    p.add_argument("--rknn_path", type=str)
+    p.add_argument("--mean", type=list, default=[0, 0, 0])
+    p.add_argument("--std", type=list, default=[1, 1, 1])
+    p.add_argument("--rgb2bgr", type=bool, default=True)
+    p.add_argument("--chip", type=str, default="RV1106")
+    return p
 
+parser = get_args()
+args = parser.parse_args()
 # config, load, build and export RKNN
-rknn_runtime = RKNN(verbose=True, verbose_file="./resnet_build.log")
-mean=[0.4648, 0.4543, 0.4247]
-std=[0.2785, 0.2735, 0.2944]
+rknn_runtime = RKNN(verbose=True)
+mean=args.mean
+std=args.std
 rknn_runtime.config(
     mean_values=[[v * 255. for v in mean]],
     std_values=[[v * 255. for v in std]],
-    quant_img_RGB2BGR=False,
-    target_platform="RV1106",
+    quant_img_RGB2BGR=args.rgb2bgr,
+    target_platform=args.chip,
     quantized_algorithm="normal",
     quantized_method="channel",
     optimization_level=3,
     quantized_dtype="asymmetric_quantized-8",
-    custom_string="saul_v0.0.1",
+    custom_string="say_my_name",
 )
 
-ret = rknn_runtime.load_onnx(model="./model/resnet18.onnx")
+ret = rknn_runtime.load_onnx(model=args.onnx_path)
 if ret != 0:
     raise TypeError(f"model load error, {ret}")
 
@@ -34,27 +41,13 @@ ret = rknn_runtime.build(do_quantization=True, dataset="./dataset.txt")
 if ret != 0:
     raise TypeError(f"rknn build error, ret: {ret}")
 
-ret = rknn_runtime.export_rknn('./model/resnet18.rknn')
-if ret !=0 :
+ret = rknn_runtime.export_rknn(args.rknn_path)
+if ret != 0 :
     raise TypeError(f"export RKNN model error, ret: {ret}")
 
 # init rknn runtime
 ret = rknn_runtime.init_runtime(target=None)
 if ret != 0:
     raise Exception(f"rknn init fail: {ret}")
-
-img = PIL.Image.open("dataset/imagenette2-320/train/n02102040/ILSVRC2012_val_00000665.JPEG").resize((224, 224))
-x_np = np.array(img)
-x_np = np.expand_dims(x_np, axis=0)
-# mean_np = np.array([v * 255. for v in mean]).astype(np.uint8)
-# std_np = np.array([v * 255. for v in std]).astype(np.uint8)
-# x_np = (x_np - mean_np) / std_np
-# x_np = np.transpose(x_np, (0, 3, 1, 2))
-
-print(x_np.shape)
-outputs = rknn_runtime.inference(inputs=[x_np])
-print(outputs[0].shape)
-y = np.argmax(outputs[0])
-print(np.argmax(y))
 
 rknn_runtime.release()

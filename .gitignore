@@ -10,6 +10,7 @@ __pycache__/
 # *.rknn
 snapshot
 .vscode
+check*
 
 # Distribution / packaging
 .Python
