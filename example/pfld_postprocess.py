@@ -21,13 +21,16 @@ input_name = session.get_inputs()[0].name
 output = session.run(None, {input_name: x_np})
 for i in range(len(output)):
     print(output[i].shape)
+    # print(output[i])
+for i in range(len(output[0][0])):
+    print(f"index: {i}, val: {output[0][0][i]:.3f}")
 
 # postprocess
-landmark, euler_angle, main_classes = output
+landmark, headpose_angle, main_classes = output
 x_np = (x_np * 255.).astype(np.uint8)
 x_np = x_np.squeeze()
 x_np = x_np.transpose(1, 2, 0)
-print(x_np.shape)
+# print(x_np.shape)
 # draw landmark
 for i in range(19):
     norm_x = landmark[:, 2 * i]
@@ -36,6 +39,14 @@ for i in range(19):
     py = int(norm_y * (h - 1))
 
     cv2.circle(x_np, (px, py), 1, (0, 255, 0), -1)
+
+# draw headpose
+print(headpose_angle)
+
+# draw main class
+main_str = f'score: {main_classes[0][0]:.2f}, {main_classes[0][0]:.2f}, {main_classes[0][2]:.2f}, {main_classes[0][3]:.2f}'
+cv2.putText(x_np, main_str, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+print(main_classes)
 
 cv2.imwrite("result.png", x_np)
 

@@ -4,6 +4,7 @@ import PIL.Image
 import numpy as np
 from rknn.api import RKNN
 import argparse
+import cv2
 
 def get_args():
     p = argparse.ArgumentParser()
@@ -20,35 +21,49 @@ def get_args():
 parser = get_args()
 args = parser.parse_args()
 # config, load, build and export RKNN
-rknn_runtime = RKNN(verbose=True)
+rknn = RKNN(verbose=True)
 mean=args.mean
 std=args.std
-rknn_runtime.config(
+rknn.config(
     mean_values=[[v for v in mean]],
     std_values=[[v for v in std]],
     quant_img_RGB2BGR=args.rgb2bgr,
     target_platform=args.chip,
     # MMSE is better than normal, but need more time and memory.
     # It set MMSE, the length of dataset should not exceed 100! If not, there will be OOM.
-    quantized_algorithm="mmse",
+    # quantized_algorithm="mmse",
+    quantized_algorithm="normal",
     quantized_method="channel",
+    optimization_level=3,
+    quantized_dtype="asymmetric_quantized-8",
+    custom_string="say_my_name",
 )
 
-ret = rknn_runtime.load_onnx(model=args.onnx_path)
+ret = rknn.load_onnx(model=args.onnx_path)
 if ret != 0:
     raise TypeError(f"model load error, {ret}")
 
-ret = rknn_runtime.build(do_quantization=True, dataset="./dataset.txt")
+ret = rknn.build(do_quantization=True, dataset="./dataset.txt")
 if ret != 0:
     raise TypeError(f"rknn build error, ret: {ret}")
 
-ret = rknn_runtime.export_rknn(args.rknn_path)
+ret = rknn.export_rknn(args.rknn_path)
 if ret != 0 :
     raise TypeError(f"export RKNN model error, ret: {ret}")
 
 # init rknn runtime
-ret = rknn_runtime.init_runtime(target=None)
+ret = rknn.init_runtime(target=None)
 if ret != 0:
     raise Exception(f"rknn init fail: {ret}")
 
-rknn_runtime.release()
+IMAGE_PATH = "/home/saul/code/rknn_python/img_celeba_256/00000.jpg"
+img_ori = cv2.imread(IMAGE_PATH)
+img_ori = cv2.cvtColor(img_ori, cv2.COLOR_BGR2RGB)
+img_ori = cv2.resize(img_ori, (256, 256), interpolation=cv2.INTER_LINEAR)
+img = np.expand_dims(img_ori, 0)
+
+outputs = rknn.inference(inputs=[img])
+
+print(outputs)
+
+rknn.release()
